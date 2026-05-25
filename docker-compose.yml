@@ -1,0 +1,60 @@
+version: '3.8'
+
+services:
+  # --- Relational Vault (PostgreSQL) ---
+  postgres:
+    image: postgres:16-alpine
+    container_name: ledger-postgres
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_DB=ledger_system_db
+      - POSTGRES_USER=madhukiran
+      - POSTGRES_PASSWORD=admin123
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U madhukiran -d ledger_system_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  # --- Lightning Clipboard (Redis) ---
+  redis:
+    image: redis:7-alpine
+    container_name: ledger-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  # --- Stripe-Lite Ledger Engine (Spring Boot) ---
+  app:
+    build: .
+    container_name: ledger-app
+    ports:
+      - "8080:8080"
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/ledger_system_db
+      - SPRING_DATASOURCE_USERNAME=madhukiran
+      - SPRING_DATASOURCE_PASSWORD=admin123
+      - SPRING_DATA_REDIS_HOST=redis
+      - SPRING_DATA_REDIS_PORT=6379
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+  redis_data:
