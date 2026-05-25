@@ -53,7 +53,7 @@ public class LedgerServiceImpl implements LedgerService {
 
     @Override
     public TransferResponse transferFunds(TransferRequest request, String referenceId) {
-        int maxRetries = 3;
+        int maxRetries = 20;
         int attempt = 0;
 
         while (true) {
@@ -70,7 +70,7 @@ public class LedgerServiceImpl implements LedgerService {
                 // Concurrency collision detected. Wait brief randomized duration before retrying.
                 // Linear/Exponential randomized backoff is an industry best practice for load distribution.
                 try {
-                    Thread.sleep(50 + (long) (Math.random() * 50));
+                    Thread.sleep(50 + (long) (Math.random() * 100));
                 } catch (InterruptedException ie) {
                     Thread.currentThread().interrupt();
                     throw e;
